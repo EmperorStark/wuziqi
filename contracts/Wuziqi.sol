@@ -1,28 +1,37 @@
-pragma solidity ^0.6.2;
+pragma solidity ^0.6.0; 
+contract Wuziqi{
+    
+    uint8[10][10] private board;
+    address player1;
+    address player2;
+    uint8 turn;
 
-contract Wuziqi {
-  address public owner;
-
-  mapping (address => uint) public balances;
-
-  constructor() public {
-    owner = msg.sender;
-  }
-
-  function transfer(address to, uint amount) public {
-    require(balances[msg.sender] >= amount, "Insufficient funds to transfer");
-    balances[msg.sender] -= amount;
-    balances[to] += amount;
-
-  }
-
-  function deposit() public payable {
-    balances[msg.sender] += msg.value;
-  }
-
-  function withdraw(uint amount) public {
-    require(balances[msg.sender] >= amount, "Insufficent funds to withdraw");
-    balances[msg.sender] -= amount;
-    msg.sender.transfer(amount);
-  }
+    function fundContract() public payable{
+    }
+    
+    function initiate(address opponent) public{
+        player1 = msg.sender;
+        player2 = opponent;
+    }
+    
+    function makeMove(uint8 x, uint8 y) public{
+        require(board[x][y] == 0, "already a piece here");
+        board[x][y] = turn;
+        require(checkWin(), "won");
+    }
+    
+    function checkWin() private returns(bool){
+        
+        return false;
+    }
+    
+    // function getStatus() public returns(bool){
+    //     return turn;
+    // }
+    
+    // function getBoard() public returns(uint8[][]){
+    //     return board;
+    // }
+    
+    
 }

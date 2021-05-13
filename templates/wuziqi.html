@@ -40,40 +40,42 @@
             board[i] = new Array(COL);
         }
 
-        load();
-        initiateStatus();
+        load().then(()=>initiateStatus());
+        
 
         var isPlaying;
         var isBlack;
 
         async function initiateStatus(){
+            console.log("initializing status");
             let status = await window.contract.methods.getStatus().call();
             let ifPlayer = await window.contract.methods.checkPlayers(account).call();
-            switch (status){
-                case 0:
+            console.log(status);
+            if (status == 0) {
+                console.log(status);
+                console.log(ifPlayer);
+                isPlaying = false;
+            }else if (status == 1) {
+                console.log(ifPlayer);
+                if(ifPlayer == 1){
+                    isPlaying = true;
+                    isBlack = true;
+                }else{
                     isPlaying = false;
-                    break;
-                case 1:
-                    if(ifPlayer == 1){
-                        isPlaying = true;
-                        isBlack = true;
-                    }else{
-                        isPlaying = false;
-                        isBlack = false;
-                    }
-                    break;
-                case 2:
-                    if(ifPlayer == 2){
-                        isPlaying = true;
-                        isBlack = false;
-                    }else{
-                        isPlaying = false;
-                        isBlack = true;
-                    }
-                    break;
-                default:
-                    break;
+                    isBlack = false;
+                }
+            }else if (status == 2) {
+                console.log(ifPlayer);
+                if(ifPlayer == 2){
+                    isPlaying = true;
+                    isBlack = false;
+                }else{
+                    isPlaying = false;
+                    isBlack = true;
+                }
             }
+            console.log(isPlaying);
+            console.log(isBlack);
         }
 
         async function updateStatus(){
@@ -87,7 +89,8 @@
         }
 
         async function loadContract() {
-            return await new window.web3.eth.Contract([
+            return await new window.web3.eth.Contract(
+                [
 	{
 		"inputs": [
 			{
@@ -102,6 +105,25 @@
 			}
 		],
 		"name": "board",
+		"outputs": [
+			{
+				"internalType": "uint8",
+				"name": "",
+				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "addr",
+				"type": "address"
+			}
+		],
+		"name": "checkPlayers",
 		"outputs": [
 			{
 				"internalType": "uint8",
@@ -202,6 +224,32 @@
 	},
 	{
 		"inputs": [],
+		"name": "player1",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "player2",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
 		"name": "restart",
 		"outputs": [],
 		"stateMutability": "nonpayable",
@@ -233,7 +281,8 @@
 		"stateMutability": "view",
 		"type": "function"
 	}
-], '0x5df6c3dB9d6e418e79377C2eB1A3E833b43e1000');
+]
+, '0x9cd61b46dB3A162De7D5412eC9238D1d3BD2bC54');
         }
 
         async function loadWeb3() {
@@ -323,7 +372,7 @@
             }
             if (board[cell.y][cell.x] == 0) {
                 isPlaying = false;
-                await window.contract.methods.makeMove(cell.x,cell.y).send({ from: account });
+                await window.contract.methods.makeMove(cell.y,cell.x).send({ from: account });
                 const win = await window.contract.methods.winner().call();
                 await refreshBoard();
                 let currentColor = isBlack ? BLACK : WHITE;

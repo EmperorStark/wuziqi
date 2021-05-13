@@ -10,14 +10,16 @@
 <body bgcolor="orange">
     <h1>五子棋</h1>
     <div><button id="restart">Restart</button></div>
-    <div><button id="update">Update Game</button></div>
+    <div>
+      Status: <span id="status"></span>
+      <button id="update" onclick="updateStatus()">Update Game Status</button></div>
     <div>
             <label for="inviteAddress">Invite Second Player:</label><br>
             <input type="text" id="inviteAddress" name="inviteAddress"/><br>
             <button id="invite" onclick="startGame()">Invite</button><br>
     </div>
     <div>
-      You: <span style="color:black">BLACK</span>
+      You: <span id="color"></span>
       <span id="win"></span>
     </div>
     <canvas id="board" width="500" height="500"></canvas>
@@ -44,7 +46,7 @@
         
 
         var isPlaying;
-        var isBlack;
+        var isBlack = null;
 
         async function initiateStatus(){
             console.log("initializing status");
@@ -60,18 +62,22 @@
                 if(ifPlayer == 1){
                     isPlaying = true;
                     isBlack = true;
+                    document.getElementById('color').innerText = 'BLACK';
                 }else{
                     isPlaying = false;
                     isBlack = false;
+                    document.getElementById('color').innerText = 'WHITE';
                 }
             }else if (status == 2) {
                 console.log(ifPlayer);
                 if(ifPlayer == 2){
                     isPlaying = true;
                     isBlack = false;
+                    document.getElementById('color').innerText = 'WHITE';
                 }else{
                     isPlaying = false;
                     isBlack = true;
+                    document.getElementById('color').innerText = 'BLACK';
                 }
             }
             console.log(isPlaying);
@@ -80,11 +86,20 @@
 
         async function updateStatus(){
             let status = await window.contract.methods.getStatus().call();
+            if(status == 0){
+                document.getElementById('status').innerText = 'Open';
+                return;
+            }
+            if(isBlack == null){
+                await initiateStatus();
+            }
             let currentColor = isBlack ? BLACK : WHITE;
             if(status == currentColor){
                 isPlaying = true;
+                document.getElementById('status').innerText = 'Your Turn';
             }else{
                 isPlaying = false;
+                document.getElementById('status').innerText = 'Opponent Turn';
             }
         }
 
@@ -312,6 +327,7 @@
             }
             const walletAddress = document.getElementById("inviteAddress").value;
             await window.contract.methods.initiate(walletAddress).send({ from: account });
+            await updateStatus();
         }
 
         async function restart() {
@@ -343,9 +359,9 @@
             restart();
         }
 
-        document.getElementById('update').onclick = function () {
-            refreshBoard();
-            updateStatus();
+        document.getElementById('update').onclick = async function () {
+            await refreshBoard();
+            await updateStatus();
         }
 
         function getCell(mouseX, mouseY) {
@@ -373,11 +389,10 @@
             if (board[cell.y][cell.x] == 0) {
                 isPlaying = false;
                 await window.contract.methods.makeMove(cell.y,cell.x).send({ from: account });
-                const win = await window.contract.methods.winner().call();
                 await refreshBoard();
-                let currentColor = isBlack ? BLACK : WHITE;
-                if (win == currentColor) {
-                    document.getElementById('win').innerText = (isBlack ? 'BLACK' : 'WHITE') + ' wins!';
+                const win = await window.contract.methods.winner().call();
+                if (win != 0) {
+                    document.getElementById('win').innerText = (win == 1 ? 'BLACK' : 'WHITE') + ' wins! Please start a new game';
                     canvas.style.opacity = '0.5';
                 }
             }

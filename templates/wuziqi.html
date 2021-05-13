@@ -4,60 +4,198 @@
 <head>
     <!-- <script src='./node_modules/web3/dist/web3.min.js'></script> -->
     <script src="{{ url_for('static', filename='node_modules/web3/dist/web3.min.js')}}"></script>
+    <title>五子棋</title>
 </head>
 
-<body>
-
-    Web 3 Demo
-    Status: <span id="status">Loading...</span>
-    <br >
-    <button onclick="printCoolNumber();">Print Cool Number</button>
-    <button>Change Cool Number</button>
-    <br /><br />
+<body bgcolor="orange">
+    <h1>五子棋</h1>
+    <div><button id="restart">Restart</button></div>
+    <div>
+            <label for="inviteAddress">Invite Second Player:</label><br>
+            <input type="text" id="inviteAddress" name="inviteAddress"/><br>
+            <button id="invite" onclick="startGame()">Invite</button><br>
+    </div>
+    <div>
+      You: <span style="color:black">BLACK</span>
+      <span id="win"></span>
+    </div>
+    <canvas id="board" width="500" height="500"></canvas>
 
     <script type="text/javascript">
+        
+        let account;
+        const BLACK = 1;
+        const WHITE = 2;
+        const ROW = 10, COL = 10;
+        const canvas = document.getElementById('board');
+        const context = canvas.getContext('2d');
+        context.fillStyle = "orange";
+        context.rect(0, 0, canvas.width, canvas.height);
+        context.fill();
+        const cellWidth = Math.floor(canvas.width / COL);
+        const cellHeight = Math.floor(canvas.height / ROW);
+        var board = new Array(ROW);
+        for (let i = 0; i < ROW; i++) {
+            board[i] = new Array(COL);
+        }
+
+        load();
+
+        let isPlaying = true;
+        let isBlack = true;
+
+        async function checkStatus(){
+            let status = await window.contract.methods.getStatus().call();
+        }
 
         async function loadContract() {
             return await new window.web3.eth.Contract([
-                {
-                    "inputs": [],
-                    "name": "fundContract",
-                    "outputs": [],
-                    "stateMutability": "payable",
-                    "type": "function"
-                },
-                {
-                    "inputs": [
-                        {
-                            "internalType": "address",
-                            "name": "opponent",
-                            "type": "address"
-                        }
-                    ],
-                    "name": "initiate",
-                    "outputs": [],
-                    "stateMutability": "nonpayable",
-                    "type": "function"
-                },
-                {
-                    "inputs": [
-                        {
-                            "internalType": "uint8",
-                            "name": "x",
-                            "type": "uint8"
-                        },
-                        {
-                            "internalType": "uint8",
-                            "name": "y",
-                            "type": "uint8"
-                        }
-                    ],
-                    "name": "makeMove",
-                    "outputs": [],
-                    "stateMutability": "nonpayable",
-                    "type": "function"
-                }
-            ], '0xf8e81D47203A594245E36C48e151709F0C19fBe8');
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "board",
+		"outputs": [
+			{
+				"internalType": "uint8",
+				"name": "",
+				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint8",
+				"name": "x",
+				"type": "uint8"
+			},
+			{
+				"internalType": "uint8",
+				"name": "y",
+				"type": "uint8"
+			}
+		],
+		"name": "checkWin",
+		"outputs": [
+			{
+				"internalType": "uint8",
+				"name": "",
+				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "fundContract",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getBoard",
+		"outputs": [
+			{
+				"internalType": "uint8[10][10]",
+				"name": "",
+				"type": "uint8[10][10]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getStatus",
+		"outputs": [
+			{
+				"internalType": "uint8",
+				"name": "",
+				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "opponent",
+				"type": "address"
+			}
+		],
+		"name": "initiate",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint8",
+				"name": "x",
+				"type": "uint8"
+			},
+			{
+				"internalType": "uint8",
+				"name": "y",
+				"type": "uint8"
+			}
+		],
+		"name": "makeMove",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "restart",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "turn",
+		"outputs": [
+			{
+				"internalType": "uint8",
+				"name": "",
+				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "winner",
+		"outputs": [
+			{
+				"internalType": "uint8",
+				"name": "",
+				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+], '0x5df6c3dB9d6e418e79377C2eB1A3E833b43e1000');
         }
 
         async function loadWeb3() {
@@ -70,23 +208,116 @@
         async function load() {
             await loadWeb3();
             window.contract = await loadContract();
-            updateStatus('Ready!');
+            console.log('Ready!');
+            refreshBoard(); 
+            account = await getCurrentAccount();
         }
 
-        function updateStatus(status) {
-            const statusEl = document.getElementById('status');
-            statusEl.innerHTML = status;
-            console.log(status);
+        async function getCurrentAccount() {
+            const accounts = await window.web3.eth.getAccounts();
+            return accounts[0];
         }
 
-        async function printCoolNumber() {
-            updateStatus('fetching Win...');
+        async function startGame(){
+            const walletAddress = document.getElementById("inviteAddress").value;
+            await window.contract.methods.initiate("0x05Fb7872d3bC3FCa8AC75306A32a36c892c21874").send({ from: account });
+        }
+
+        function restart() {
+            for (let row = 0; row < ROW; row++) {
+                for (let col = 0; col < COL; col++) {
+                    board[row][col] = 0;
+                }
+            }
+            refreshBoard();
+            document.getElementById('win').innerText = '';
+            canvas.style.opacity = '1';
+        }
+
+        function refreshBoard() {
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            loadBoard();
+            drawGrid();
+            drawPieces();
+        }
+
+        async function loadBoard(){
             console.log(window.contract);
-            const coolNumber = await window.contract.methods.makeMove(1,1).call();
-            updateStatus(coolNumber);
-}
+            const board_str = await window.contract.methods.getBoard().call();
+            board = board_str;
+        }
 
-        load();
+        document.getElementById('restart').onclick = function () {
+            restart();
+        }
+
+        function getCell(mouseX, mouseY) {
+            if (mouseX < 0 || mouseX >= canvas.width || mouseY < 0 || mouseY >= canvas.height) {
+                return {
+                x: -1,
+                y: -1
+                };
+            }
+            return {
+                x: Math.floor(mouseX / cellWidth),
+                y: Math.floor(mouseY / cellHeight)
+            };
+        }
+
+        canvas.addEventListener('click', async function (event) {
+            if (!isPlaying) {
+                return;
+            }
+            const rect = canvas.getBoundingClientRect();
+            const cell = getCell(event.clientX - rect.left, event.clientY - rect.top);
+            if (cell.x < 0 || cell.y < 0) {
+                return;
+            }
+            if (board[cell.y][cell.x] == 0) {
+                isPlaying = false;
+                await window.contract.methods.makeMove(cell.x,cell.y).send({ from: account });
+                const win = await window.contract.methods.winner().call();
+                refreshBoard();
+                if (win) {
+                    document.getElementById('win').innerText = (isBlack ? 'BLACK' : 'WHITE') + ' wins!';
+                    canvas.style.opacity = '0.5';
+                }
+            }
+        });
+
+        function drawGrid() {
+            context.strokeStyle = "black";
+            context.beginPath();
+            for (let i = 1; i < ROW; i++) {
+                const y = i * cellHeight;
+                context.moveTo(0, y);
+                context.lineTo(canvas.width, y);
+            }
+            for (let i = 1; i < COL; i++) {
+                const x = i * cellWidth;
+                context.moveTo(x, 0);
+                context.lineTo(x, canvas.height);
+            }
+            context.stroke();
+            }
+
+        function drawPieces() {
+            for (let row = 0; row < ROW; row++) {
+                for (let col = 0; col < COL; col++) {
+                if (!board[row][col]) {
+                    continue;
+                }
+                context.beginPath();
+                const r = Math.floor(0.4 * Math.min(cellWidth, cellHeight));
+                const cx = Math.floor((col + col + 1) * cellWidth / 2);
+                const cy = Math.floor((row + row + 1) * cellHeight / 2);
+                context.fillStyle = board[row][col] == WHITE ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)';
+                context.arc(cx, cy, r, 0, Math.PI * 2);
+                context.fill();
+                }
+            }
+        }
+        
     </script>
 </body>
 

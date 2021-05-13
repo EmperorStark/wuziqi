@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Backgammon</title>
+</head>
+<body bgcolor="orange"> 
+<canvas id="canvas" width="1000" height="1000">
+	This text is displayed if your browser does not support HTML5 Canvas.
+</canvas>
+<!--<script type='text/javascript' src='script.js'></script>-->
+		<script>
+
+var DrawTool = {
+	createNew: function(context){
+		var draw_tool = {};
+		draw_tool.rect = function(x,y,length,Width){
+			context.fillStyle = "orange";
+			//context.strokeStyle = "blue";
+			context.rect(x,y,length,Width);
+			context.fill();
+			//context.stroke();
+		};
+		draw_tool.circle = function(color,x,y,r){
+			context.beginPath();
+			context.arc(x, y, r, 0, Math.PI*2, false);
+			context.fillStyle = color;
+			context.lineWidth = 3;
+			//context.strokeStyle = color;
+			context.fill();
+			//context.stroke();
+		};
+		draw_tool.line = function(x1, y1, x2, y2){
+			context.beginPath();
+			//context.fillStyle = color;
+			context.lineWidth = 2;
+			context.strokeStyle = "black";
+			context.moveTo(x1,y1);
+			context.lineTo(x2,y2);
+			context.stroke();
+		};
+		return draw_tool;
+	}
+}
+
+var Board = {
+	createNew: function(origin_left, origin_up, unit, grid_num, draw_tool){
+		var board = {};
+		board.init = function(){
+			var length = unit * grid_num;
+			var offset = unit/2;
+			draw_tool.rect(origin_left - offset, origin_up - offset, length + 2*offset, length + 2*offset );
+			for(var g=0; g<grid_num+1; g++) {
+				var l = unit * g;
+				draw_tool.line(origin_left, origin_up + l, origin_left + length, origin_up + l);
+				draw_tool.line(origin_left + l, origin_up, origin_left + l, origin_up + length);
+			}
+			var line_color = "black";
+			var point_radius = 5;
+			draw_tool.circle(line_color, origin_left + 3*unit, origin_up + 3*unit, point_radius);
+			draw_tool.circle(line_color, origin_left + 3*unit, origin_up + 15*unit, point_radius);
+			draw_tool.circle(line_color, origin_left + 15*unit, origin_up + 3*unit, point_radius);
+			draw_tool.circle(line_color, origin_left + 15*unit, origin_up + 15*unit, point_radius);
+			draw_tool.circle(line_color, origin_left + 9*unit, origin_up + 9*unit, point_radius);
+			draw_tool.circle(line_color, origin_left + 3*unit, origin_up + 9*unit, point_radius);
+			draw_tool.circle(line_color, origin_left + 15*unit, origin_up + 9*unit, point_radius);
+			draw_tool.circle(line_color, origin_left + 9*unit, origin_up + 3*unit, point_radius);
+			draw_tool.circle(line_color, origin_left + 9*unit, origin_up + 15*unit, point_radius);
+		}
+		board.draw_circle = function(playerTurn, x, y){
+			draw_tool.circle((playerTurn==0)?"black":"white", origin_left + x * unit , origin_up + y * unit , unit*2/5);
+		}
+		board.isInBoard = function(xx, yy){
+			var length = unit * grid_num;
+			var offset = unit/2;
+			return origin_left-offset < xx && xx < origin_left + length + offset && origin_up-offset < yy && yy < origin_up + length + offset ;
+		}
+		board.mapping = function(xx, yy){
+			var x = Math.round((xx - origin_left)/unit);
+			var y = Math.round((yy - origin_up)/unit);
+			return [x, y];
+		}
+		return board;
+	}
+}
+
+function array1d(len1){
+	var row = [];
+	for(var j=0;j<len1;++j)
+		row.push(-1);
+	return row;
+}
+
+function array2d(len1, len2){
+	var row = array1d(len2);
+	var table = [];
+	for(var i=0;i<len1;++i)
+		table.push(row.slice());
+	return table;
+}
+
+
+
+var State = {
+	createNew: function(origin_left, origin_up, unit, grid_num, draw_tool){
+		var state = {};
+		state.board = Board.createNew(origin_left, origin_up, unit, grid_num, draw_tool);
+		state.grid = grid_num+1;
+		state.table = array2d(state.grid, state.grid);
+		state.history = [];
+		state.isActionLegal = function(action){
+			var x = action[0];
+			var y = action[1];
+			if(x < 0 || y < 0 || x >= state.grid || y >= state.grid) return false;
+			return state.table[x][y] == -1;
+		}
+		state.takeAction = function(action, playerTurn){
+			if(state.isActionLegal(action) == false) return;
+			state.history.push(action.slice());
+			var x = action[0];
+			var y = action[1];
+			state.table[x][y]=playerTurn;
+			state.board.draw_circle(playerTurn, x, y); 
+		}
+		state.reverseAction = function(action, playerIndex){
+		}
+		state.getProgress = function(playerIndex){
+		}
+		state.get_connect_nums = function(x, y){
+			function block_or_not(i,j){
+				return (state.isActionLegal([i,j])) ? 0.4 : 0;
+			}
+			var turn = state.table[x][y];
+			/*
+			      n3
+			    n4 | n2
+			   n5 -|- n1
+			    n6 | n8
+			      n7
+			 */
+			var n1, n2, n3, n4, n5, n6, n7, n8;
+			for(var k=x; k<state.grid; ++k){
+				if(state.table[k][y]!=turn) break;
+			}
+			n1 = k-x;
+			n1 += block_or_not(k,y);
+
+			for(var k=0; x+k<state.grid && y-k>=0; ++k){
+				if(state.table[x+k][y-k]!=turn) break;
+			}
+			n2=k;
+			n2 += block_or_not(x+k,y-k);
+
+			for(var k=y; k>=0; --k){
+				if(state.table[x][k]!=turn) break;
+			}
+			n3=y-k;
+			n3 += block_or_not(x,k);
+
+			for(var k=0; x-k>=0 && y-k>=0;++k){
+				if(state.table[x-k][y-k]!=turn) break;
+			}
+			n4=k;
+			n4 += block_or_not(x-k,y-k);
+
+			for(var k=x; k>=0;--k){
+				if(state.table[k][y]!=turn) break;
+			}
+			n5 =x-k;
+			n5 += block_or_not(k,y);
+
+			for(var k=0; x-k>=0 && y+k<state.grid;++k){
+				if(state.table[x-k][y+k]!=turn) break;
+			}
+			n6=k;
+			n6 += block_or_not(x-k,y+k);
+
+			for(var k=y; k<state.grid; ++k){
+				if(state.table[x][k]!=turn) break;
+			}
+			n7=k-y;
+			n7 += block_or_not(x,k);
+
+			for(var k=0; x+k<state.grid && y+k<state.grid;++k){
+				if(state.table[x+k][y+k]!=turn) break;
+			}
+			n8=k;
+			n8 += block_or_not(x+k,y+k);
+			return [n1+n5-1, n2+n6-1, n3+n7-1, n4+n8-1];
+		}
+		state.isWin = function(playerTurn){
+			var l = state.history.length;
+			if(l<4) return false;
+			var x = state.history[l-1][0];
+			var y = state.history[l-1][1];
+			var connect_nums = state.get_connect_nums(x, y);
+			for(var i=0; i<4; ++i){
+				if(connect_nums[i] >= 5) {
+					var winner = (playerTurn==0)?"black":"white";
+					window.alert( winner + " win!!");
+					return true;
+				}
+			}
+			return false;
+		}
+		state.get_score = function(action, turn){
+			var x = action[0];
+			var y = action[1];
+			state.table[x][y]=turn;
+			var connect_nums = state.get_connect_nums(x, y);
+			state.table[x][y]=-1;
+			//console.log(connect_nums);
+			var score = 0;
+			for(var i=0; i<4; ++i){
+				if(connect_nums[i] > score) score = connect_nums[i];
+			}
+			return Math.pow(score, 16);
+		}
+		state.push_candidate = function(x, y, temp, candidates){
+			if(state.isActionLegal([x,y]) == false) return;
+			if(temp[x][y] == 1) return;
+			temp[x][y] = 1;
+			candidates.push( [x, y] );
+		}
+		state.get_candidates = function(){
+			var candidates = [];
+			var temp = array2d(state.grid, state.grid);
+			for(var i=0; i < state.grid; ++i){
+				for(var j=0; j < state.grid; ++j){
+					if(state.isActionLegal([i,j]) == false){
+						for(var n = 1; n<3; ++n) {
+							state.push_candidate(i+n, j, temp, candidates);
+							state.push_candidate(i+n, j+n, temp, candidates);
+							state.push_candidate(i,   j+n, temp, candidates);
+							state.push_candidate(i-n, j+n, temp, candidates);
+							state.push_candidate(i-n, j, temp, candidates);
+							state.push_candidate(i-n, j-n, temp, candidates);
+							state.push_candidate(i,   j-n, temp, candidates);
+							state.push_candidate(i+n, j-n, temp, candidates);
+						}
+					}
+				}
+			}
+			return candidates;
+		}
+		return state;
+	}
+}
+
+var Game = {
+	createNew: function(agent0, agent1, origin_left, origin_up, unit, grid_num){
+		var game = {};
+		game.playerTurn = 0;
+		game.canvas = document.getElementById("canvas");
+		game.state = State.createNew(origin_left, origin_up, unit, grid_num, DrawTool.createNew(game.canvas.getContext("2d")) );
+		game.agents = [agent0.createNew(game.state, 0), agent1.createNew(game.state, 1)];
+		game.isEnd = function(){
+			return game.state.isWin( game.playerTurn );
+		}
+		game.start = function(){
+			function doMouseDown(event){
+				do{
+					var agent = game.agents[game.playerTurn];
+					var action;
+					if(agent.isManual()){
+						var xx = event.pageX;
+						var yy = event.pageY;
+						//console.log([xx, yy]);
+						if( game.state.board.isInBoard(xx,yy) == false) return;
+						action = game.state.board.mapping(xx,yy);
+					}
+					else action = agent.getAction();
+					//console.log(action);
+					if(game.state.isActionLegal(action) == false) return;
+					game.state.takeAction(action, game.playerTurn);
+					var is_end = game.isEnd();
+					game.takeTurn();
+					var is_next_manual = (game.agents[game.playerTurn].isManual());
+				} while(!is_end && !is_next_manual);
+			}
+			game.canvas.addEventListener("mousedown", doMouseDown, false);
+			do {
+				var agent = game.agents[game.playerTurn];
+				if(agent.isManual()) return;
+				else action = agent.getAction();
+				if(game.state.isActionLegal(action) == false) return;
+				game.state.takeAction(action, game.playerTurn);
+				var is_end = game.isEnd();
+				game.takeTurn();
+			} while(!is_end);
+		}
+		game.takeTurn = function(){
+			game.playerTurn = (game.playerTurn+1)%2;
+		}
+		return game;
+	}
+}
+
+var Manual_Agent = {
+	createNew: function(state, myTurn, canvas){
+		var agent = {};
+		agent.isManual = function(){ return true;}
+		agent.getName = function(){ return "manual";}
+		return agent;
+	}
+}
+
+
+var Reflex_Agent = {
+	createNew: function(state, myTurn, canvas){
+		var agent = {};
+		agent.getAction = function(){
+			var candidates = state.get_candidates();
+			var max_s = 0; 
+			var final_action = [5,5];
+			for(var index in candidates){
+				var action = candidates[index];
+				var opponent = (myTurn + 1)%2;
+				var s = state.get_score(action, myTurn) + state.get_score(action, opponent);
+				if(s > max_s) {
+					max_s = s;
+					final_action = action;
+				}
+			}
+			return final_action;
+		}
+		agent.isManual = function(){ return false;}
+		agent.getName = function(){ return "reflex";}
+		return agent;
+	}
+}
+
+
+game = Game.createNew(agent0 = Reflex_Agent, agent1 = Manual_Agent, origin_left = 60, origin_up = 70, unit = 50, grid_num = 18);
+game.state.board.init();
+game.start();
+
+		</script>
+</body>
+</html>

@@ -7,4 +7,4 @@ app = Flask(__name__, static_url_path="", static_folder="static")
 def home():
     return render_template("wuziqi.html")
 
-app.run(host="localhost", port = 5000)
+app.run(host="localhost", port = 50000)

@@ -179,6 +179,15 @@ contract Wuziqi{
         
         return 0;
     }
+
+    function checkPlayers(address addr) view public returns(uint8){
+        if(addr == player1){
+            return 1;
+        }else if(addr == player2){
+            return 2;
+        }
+        return 0;
+    }
     
     function getStatus() view public returns(uint8){
         return turn;

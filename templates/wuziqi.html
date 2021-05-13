@@ -9,7 +9,7 @@
 
 <body bgcolor="orange">
     <h1>五子棋</h1>
-    <div><button id="restart">Restart</button></div>
+    <div><button id="restart">Surrender</button></div>
     <div>
       Status: <span id="status"></span>
       <button id="update" onclick="updateStatus()">Update Game Status</button></div>
@@ -20,8 +20,8 @@
     </div>
     <div>
       You: <span id="color"></span>
-      <span id="win"></span>
     </div>
+    <div><span id="win"></span></div>
     <canvas id="board" width="500" height="500"></canvas>
 
     <script type="text/javascript">
@@ -327,19 +327,22 @@
             }
             const walletAddress = document.getElementById("inviteAddress").value;
             await window.contract.methods.initiate(walletAddress).send({ from: account });
+            await refreshBoard();
             await updateStatus();
         }
 
         async function restart() {
-            for (let row = 0; row < ROW; row++) {
-                for (let col = 0; col < COL; col++) {
-                    board[row][col] = 0;
-                }
-            }
-            await refreshBoard();
-            document.getElementById('win').innerText = '';
-            canvas.style.opacity = '1';
-            await window.contract.methods.restart().send({ from: account });
+            // do not refresh board
+            // for (let row = 0; row < ROW; row++) {
+            //     for (let col = 0; col < COL; col++) {
+            //         board[row][col] = 0;
+            //     }
+            // }
+            // await refreshBoard();
+            // document.getElementById('win').innerText = '';
+            // canvas.style.opacity = '1';
+            await window.contract.methods.restart().send({ from: account })
+            await checkWin();
         }
 
         async function refreshBoard() {
@@ -347,6 +350,16 @@
             await loadBoard();
             drawGrid();
             drawPieces();
+            await checkWin();
+        }
+
+        async function checkWin() {
+            const win = await window.contract.methods.winner().call();
+                if (win != 0) {
+                    document.getElementById('win').innerText = (win == 1 ? 'BLACK' : 'WHITE') + ' wins! Please start a new game';
+                    canvas.style.opacity = '0.5';
+                    isPlaying = false;
+                }
         }
 
         async function loadBoard(){
@@ -390,11 +403,6 @@
                 isPlaying = false;
                 await window.contract.methods.makeMove(cell.y,cell.x).send({ from: account });
                 await refreshBoard();
-                const win = await window.contract.methods.winner().call();
-                if (win != 0) {
-                    document.getElementById('win').innerText = (win == 1 ? 'BLACK' : 'WHITE') + ' wins! Please start a new game';
-                    canvas.style.opacity = '0.5';
-                }
             }
         });
 

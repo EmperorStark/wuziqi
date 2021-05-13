@@ -22,6 +22,11 @@ contract Wuziqi{
     
     function restart() public{
         require((msg.sender == player1 && turn == 1) || (msg.sender == player2 && turn == 2));
+        if(turn == 1){
+            winner = 2;
+        }else{
+            winner = 1;
+        }
         turn = 0;
     }
     
@@ -179,7 +184,7 @@ contract Wuziqi{
         
         return 0;
     }
-
+    
     function checkPlayers(address addr) view public returns(uint8){
         if(addr == player1){
             return 1;
